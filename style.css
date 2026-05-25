@@ -87,3 +87,54 @@ h1 {
   background: linear-gradient(90deg, var(--cyan), var(--amber), var(--rose));
   transition: width 220ms ease;
 }
+
+.icon-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.icon-button {
+  display: grid;
+  width: 44px;
+  height: 44px;
+  place-items: center;
+  border: 1px solid rgba(246, 240, 221, 0.18);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--ink);
+  cursor: pointer;
+  font-size: 1.08rem;
+  font-weight: 800;
+  transition: background 160ms ease, border-color 160ms ease, transform 160ms ease;
+}
+
+.icon-button:hover,
+.icon-button:focus-visible {
+  border-color: rgba(83, 239, 214, 0.74);
+  background: rgba(83, 239, 214, 0.14);
+  outline: none;
+}
+
+.icon-button:active {
+  transform: translateY(1px);
+}
+
+.icon-button[aria-pressed="true"] {
+  border-color: rgba(242, 179, 94, 0.8);
+  background: rgba(242, 179, 94, 0.16);
+}
+
+.stage {
+  position: relative;
+  min-height: 0;
+  background:
+    linear-gradient(180deg, rgba(5, 12, 20, 0.1), rgba(4, 10, 12, 0.65)),
+    #081017;
+}
+
+#skyCanvas {
+  width: 100%;
+  height: 100%;
+  cursor: grab;
+  touch-action: none;
+}
