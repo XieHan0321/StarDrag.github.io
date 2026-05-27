@@ -178,3 +178,36 @@ h1 {
   clip-path: inset(50%);
   white-space: nowrap;
 }
+
+@media (max-width: 720px) {
+  .topbar {
+    grid-template-columns: 1fr auto;
+    gap: 14px;
+    padding: 14px 14px 12px;
+  }
+
+  .progress-panel {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+
+  .icon-actions {
+    justify-self: end;
+  }
+
+  .signal-strip {
+    left: 14px;
+    right: 14px;
+    bottom: 14px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.001ms !important;
+    animation-duration: 0.001ms !important;
+  }
+}
