@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Assignment 3 - Harbor Sky Calibration</title>
+    <link rel="stylesheet" href="./css/reset.css">
+    <link rel="stylesheet" href="./css/style.css">
+  </head>
+  <body>
+    <main class="app-shell">
+      <header class="topbar" aria-label="Prototype header">
+        <div class="title-group">
+          <p class="eyebrow">Assignment 3 Prototype</p>
+          <h1>Harbor Sky Calibration</h1>
+        </div>
+
+        <section class="progress-panel" aria-label="Alignment progress">
+          <span id="scoreLabel" class="score-label">0 / 7 aligned</span>
+          <div class="progress-track" aria-hidden="true">
+            <div id="scoreBar" class="progress-fill"></div>
+          </div>
+        </section>
+
+        <nav class="icon-actions" aria-label="Prototype controls">
+          <button id="resetBtn" class="icon-button" type="button" title="Reset field">
+            <span aria-hidden="true">&#8634;</span>
+            <span class="sr-only">Reset field</span>
+          </button>
+          <button id="hintBtn" class="icon-button" type="button" aria-pressed="false" title="Reveal targets">
+            <span aria-hidden="true">?</span>
+            <span class="sr-only">Reveal targets</span>
+          </button>
+        </nav>
+      </header>
+
+      <section class="stage" aria-label="Interactive harbor constellation">
+        <p id="canvasHelp" class="sr-only">
+          Drag the bright beacons toward the pale target rings. Keyboard users can focus the canvas, press space to select another beacon, and use arrow keys to move it.
+        </p>
+        <canvas id="skyCanvas" tabindex="0" aria-describedby="canvasHelp statusText"></canvas>
+        <aside class="signal-strip" aria-live="polite" aria-atomic="true">
+          <p id="statusText">Beacon field: unsettled.</p>
+          <p id="completionText" hidden>Signal aligned. The harbor constellation is ready.</p>
+        </aside>
+      </section>
+    </main>
+
+    <script src="./js/script.js" defer></script>
+  </body>
+</html>
