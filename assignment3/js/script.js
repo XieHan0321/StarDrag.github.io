@@ -1,69 +1,3 @@
-/*
-Assignment 3 design commentary, written as code comments so it remains attached to
-the prototype itself:
-
-The chosen context for this browser prototype is a small harbor observatory exhibit
-called Harbor Sky Calibration. The exhibit imagines that visitors are helping align
-an instrument that translates waterfront beacon lights into a night-sky
-constellation. I chose this context because it naturally supports a drag
-interaction: calibration is a physical, spatial task, and dragging a point across a
-field feels closer to tuning a real instrument than pressing a normal button would.
-The brief asks for one focused browser interaction rather than a complete website,
-so the whole screen is dedicated to the interactive surface. The header, progress
-meter, and two icon controls are intentionally secondary; they frame the experience
-without turning it into a conventional content page.
-
-The visual style follows the observatory context. The palette uses deep night
-values as a base, but it avoids relying on only one blue tone. Cyan, amber, rose,
-and green appear as beacon colors because harbor equipment, instrument panels, and
-signal lamps often communicate state through contrasting colored light. The bottom
-of the canvas includes a quiet waterfront silhouette, which anchors the artwork in
-the chosen setting while keeping the actual task clear. I avoided external images,
-fonts, and code libraries so the project meets the assignment rules and can be
-published as a simple GitHub Pages folder. Every star, target, building, wave, and
-beam is drawn procedurally by this script, so there are no media sources to cite.
-
-Usability depends on feedback being layered rather than explained by a long block
-of text. The draggable nodes are brighter and larger than the background stars.
-When a pointer hovers over a node, the node gains a ring and the cursor changes,
-which suggests that it can be moved. While dragging, guide lines connect the user's
-current point to the target and nearby successful targets glow more strongly. When
-the user releases close enough to a target, the node snaps into place, locks, and
-updates the progress meter. The snap threshold is deliberately forgiving because an
-exhibit or art prototype should reward exploration rather than require pixel-perfect
-precision. The hint button reveals the complete target constellation for visitors
-who want a more explicit puzzle state, while the default view keeps the targets
-subtle enough to feel like discovery.
-
-The implementation is tailored to the browser. Canvas allows the visual field to
-scale fluidly across desktop and mobile screens without importing a drawing
-library. Pointer events unify mouse, touch, and pen input, so the same drag code
-works on laptops and phones. The resize handler redraws using devicePixelRatio so
-the beacons remain sharp on high-density displays. A small keyboard fallback is
-also included: when the canvas has focus, space selects the next unlocked beacon
-and arrow keys nudge the active beacon. This fallback does not replace the main
-drag concept, but it makes the prototype less brittle for users who cannot or do
-not want to use a pointer device. ARIA live text reports state changes without
-requiring a separate instruction panel.
-
-If this prototype became part of a larger project, the main advantage would be the
-clarity of its interaction model. Dragging spatial objects into alignment could
-extend into an educational constellation builder, a museum kiosk, or a narrative
-game mechanic. The strongest challenge would be maintaining accessibility and
-semantic structure as the canvas scene grows. Canvas is excellent for rich visual
-feedback, but it does not expose each drawn object to assistive technology by
-default. A production version would likely pair the canvas with DOM controls or a
-structured object list so every beacon has a true accessible name, state, and
-control. Another challenge would be authoring more levels without hard-coding each
-target. A data format for constellations, target tolerances, labels, and feedback
-copy would let curators or designers expand the experience without editing the
-engine. Performance should remain manageable for this small scene, but a larger
-version with particle effects, audio, or many moving objects would need stricter
-profiling and options for reduced motion. Even with those challenges, the core
-benefit is strong: a single browser gesture creates a clear loop of intent, visual
-response, correction, and reward.
-*/
-
 const canvas = document.querySelector("#skyCanvas");
 const ctx = canvas.getContext("2d");
 const scoreLabel = document.querySelector("#scoreLabel");
@@ -168,3 +102,222 @@ const waterfront = [
   { x: 0.78, w: 0.045, h: 0.12 },
   { x: 0.86, w: 0.08, h: 0.075 }
 ];
+
+function createStarField(count) {
+  let seed = 7123;
+  const random = () => {
+    seed = (seed * 1664525 + 1013904223) % 4294967296;
+    return seed / 4294967296;
+  };
+
+  return Array.from({ length: count }, () => ({
+    x: random(),
+    y: random() * 0.74,
+    radius: 0.55 + random() * 1.25,
+    alpha: 0.22 + random() * 0.58,
+    phase: random() * Math.PI * 2
+  }));
+}
+
+function resizeCanvas() {
+  const rect = canvas.getBoundingClientRect();
+  state.width = rect.width;
+  state.height = rect.height;
+  state.dpr = Math.min(window.devicePixelRatio || 1, 2);
+  canvas.width = Math.max(1, Math.floor(rect.width * state.dpr));
+  canvas.height = Math.max(1, Math.floor(rect.height * state.dpr));
+  ctx.setTransform(state.dpr, 0, 0, state.dpr, 0, 0);
+  draw();
+}
+
+function draw(now = performance.now()) {
+  const t = prefersReducedMotion ? 0 : (now - state.startTime) / 1000;
+  drawBackground(t);
+  drawTargets(t);
+  drawConnections();
+  drawNodes(t);
+}
+
+function drawBackground(t) {
+  const { width, height } = state;
+  ctx.clearRect(0, 0, width, height);
+
+  const sky = ctx.createLinearGradient(0, 0, 0, height);
+  sky.addColorStop(0, "#07111f");
+  sky.addColorStop(0.5, "#0b1b24");
+  sky.addColorStop(1, "#11201d");
+  ctx.fillStyle = sky;
+  ctx.fillRect(0, 0, width, height);
+
+  ctx.save();
+  backgroundStars.forEach((star) => {
+    const pulse = prefersReducedMotion ? 0.8 : 0.65 + Math.sin(t * 1.2 + star.phase) * 0.25;
+    ctx.globalAlpha = star.alpha * pulse;
+    ctx.fillStyle = "#f6f0dd";
+    ctx.beginPath();
+    ctx.arc(star.x * width, star.y * height, star.radius, 0, Math.PI * 2);
+    ctx.fill();
+  });
+  ctx.restore();
+
+  drawWaterfront();
+  drawWater(t);
+}
+
+function drawWaterfront() {
+  const { width, height } = state;
+  const base = height * 0.83;
+
+  ctx.save();
+  ctx.fillStyle = "rgba(3, 9, 12, 0.64)";
+  ctx.fillRect(0, base, width, height - base);
+
+  ctx.fillStyle = "rgba(6, 13, 17, 0.9)";
+  waterfront.forEach((building) => {
+    const x = building.x * width;
+    const w = building.w * width;
+    const h = building.h * height;
+    ctx.fillRect(x, base - h, w, h);
+    ctx.fillStyle = "rgba(242, 179, 94, 0.24)";
+    ctx.fillRect(x + w * 0.22, base - h + h * 0.28, w * 0.14, h * 0.12);
+    ctx.fillRect(x + w * 0.58, base - h + h * 0.52, w * 0.14, h * 0.12);
+    ctx.fillStyle = "rgba(6, 13, 17, 0.9)";
+  });
+
+  ctx.strokeStyle = "rgba(83, 239, 214, 0.15)";
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(0, base + 0.5);
+  ctx.lineTo(width, base + 0.5);
+  ctx.stroke();
+  ctx.restore();
+}
+
+function drawWater(t) {
+  const { width, height } = state;
+  const top = height * 0.86;
+
+  ctx.save();
+  for (let line = 0; line < 6; line += 1) {
+    const y = top + line * 18;
+    ctx.beginPath();
+    for (let x = -20; x <= width + 20; x += 20) {
+      const wave = Math.sin(x * 0.015 + t * 0.8 + line) * 4;
+      if (x === -20) {
+        ctx.moveTo(x, y + wave);
+      } else {
+        ctx.lineTo(x, y + wave);
+      }
+    }
+    ctx.strokeStyle = line % 2 === 0 ? "rgba(83, 239, 214, 0.1)" : "rgba(242, 179, 94, 0.09)";
+    ctx.lineWidth = 1;
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
+function drawTargets(t) {
+  const targetOpacity = state.showTargets ? 0.76 : 0.24;
+
+  ctx.save();
+  links.forEach(([a, b]) => {
+    const start = toScreen(nodes[a].target);
+    const end = toScreen(nodes[b].target);
+    ctx.beginPath();
+    ctx.moveTo(start.x, start.y);
+    ctx.lineTo(end.x, end.y);
+    ctx.strokeStyle = `rgba(246, 240, 221, ${state.showTargets ? 0.25 : 0.08})`;
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([7, 9]);
+    ctx.stroke();
+  });
+  ctx.setLineDash([]);
+
+  nodes.forEach((node, index) => {
+    const target = toScreen(node.target);
+    const glow = node.locked ? 0.85 : targetOpacity;
+    const pulse = prefersReducedMotion ? 1 : 1 + Math.sin(t * 2.4 + index) * 0.08;
+    ctx.strokeStyle = withAlpha(node.color, glow);
+    ctx.lineWidth = node.locked ? 3 : 2;
+    ctx.beginPath();
+    ctx.arc(target.x, target.y, targetRadius() * pulse, 0, Math.PI * 2);
+    ctx.stroke();
+
+    if (state.showTargets || node.locked) {
+      ctx.fillStyle = withAlpha(node.color, node.locked ? 0.18 : 0.1);
+      ctx.beginPath();
+      ctx.arc(target.x, target.y, targetRadius() * 0.56, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  });
+  ctx.restore();
+}
+
+function drawConnections() {
+  ctx.save();
+  links.forEach(([a, b]) => {
+    const startNode = nodes[a];
+    const endNode = nodes[b];
+    const start = toScreen(startNode.position);
+    const end = toScreen(endNode.position);
+    const bothLocked = startNode.locked && endNode.locked;
+    const gradient = ctx.createLinearGradient(start.x, start.y, end.x, end.y);
+    gradient.addColorStop(0, withAlpha(startNode.color, bothLocked ? 0.86 : 0.34));
+    gradient.addColorStop(1, withAlpha(endNode.color, bothLocked ? 0.86 : 0.34));
+    ctx.strokeStyle = gradient;
+    ctx.lineWidth = bothLocked ? 3 : 1.6;
+    ctx.beginPath();
+    ctx.moveTo(start.x, start.y);
+    ctx.lineTo(end.x, end.y);
+    ctx.stroke();
+  });
+  ctx.restore();
+}
+
+function drawNodes(t) {
+  nodes.forEach((node, index) => {
+    const point = toScreen(node.position);
+    const isHover = index === state.hoverIndex;
+    const isActive = index === state.activeIndex;
+    const isDragging = index === state.dragIndex;
+    const pulse = prefersReducedMotion ? 0 : Math.sin(t * 3 + index) * 1.6;
+    const radius = nodeRadius() + (isHover || isDragging ? 4 : 0) + (node.locked ? 2 : 0);
+
+    if (isDragging || isActive) {
+      drawGuide(index);
+    }
+
+    ctx.save();
+    const glow = ctx.createRadialGradient(point.x, point.y, 1, point.x, point.y, radius * 3.5);
+    glow.addColorStop(0, withAlpha(node.color, node.locked ? 0.42 : 0.34));
+    glow.addColorStop(1, "rgba(0, 0, 0, 0)");
+    ctx.fillStyle = glow;
+    ctx.beginPath();
+    ctx.arc(point.x, point.y, radius * 3.5, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = withAlpha(node.color, node.locked ? 0.98 : 0.92);
+    ctx.beginPath();
+    ctx.arc(point.x, point.y, radius + pulse, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = "rgba(255, 255, 255, 0.72)";
+    ctx.beginPath();
+    ctx.arc(point.x - radius * 0.3, point.y - radius * 0.3, Math.max(2, radius * 0.22), 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.strokeStyle = isActive ? "rgba(246, 240, 221, 0.88)" : "rgba(246, 240, 221, 0.28)";
+    ctx.lineWidth = isActive ? 2.5 : 1;
+    ctx.beginPath();
+    ctx.arc(point.x, point.y, radius + 7, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.restore();
+  });
+}
+
+function drawGuide(index) {
+  const node = nodes[index];
+  const point = toScreen(node.position);
+  const target = toScreen(node.target);
+  const distance = distanceBetween(node.position, node.target);
+  const near = distance < snapDistance * 1.8;
