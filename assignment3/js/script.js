@@ -321,3 +321,114 @@ function drawGuide(index) {
   const target = toScreen(node.target);
   const distance = distanceBetween(node.position, node.target);
   const near = distance < snapDistance * 1.8;
+  
+ ctx.save();
+  ctx.strokeStyle = near ? withAlpha(node.color, 0.62) : "rgba(246, 240, 221, 0.2)";
+  ctx.lineWidth = near ? 2 : 1;
+  ctx.setLineDash([5, 7]);
+  ctx.beginPath();
+  ctx.moveTo(point.x, point.y);
+  ctx.lineTo(target.x, target.y);
+  ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.restore();
+}
+
+function getPointerPosition(event) {
+  const rect = canvas.getBoundingClientRect();
+  return {
+    x: event.clientX - rect.left,
+    y: event.clientY - rect.top
+  };
+}
+
+function getNodeAt(point) {
+  for (let index = nodes.length - 1; index >= 0; index -= 1) {
+    const node = nodes[index];
+    const screen = toScreen(node.position);
+    const hitRadius = nodeRadius() + 12;
+    if (Math.hypot(point.x - screen.x, point.y - screen.y) <= hitRadius) {
+      return index;
+    }
+  }
+  return -1;
+}
+
+function handlePointerDown(event) {
+  const point = getPointerPosition(event);
+  const index = getNodeAt(point);
+
+  if (index === -1) {
+    return;
+  }
+
+  canvas.focus({ preventScroll: true });
+  canvas.setPointerCapture(event.pointerId);
+  state.dragIndex = index;
+  state.activeIndex = index;
+  state.hoverIndex = index;
+  state.pointerOffset = {
+    x: point.x - nodes[index].position.x * state.width,
+    y: point.y - nodes[index].position.y * state.height
+  };
+  nodes[index].locked = false;
+  completionText.hidden = true;
+  setStatus(`${nodes[index].label}: calibrating.`);
+  draw();
+}
+
+function handlePointerMove(event) {
+  const point = getPointerPosition(event);
+
+  if (state.dragIndex !== -1) {
+    const node = nodes[state.dragIndex];
+    node.position = clampPoint({
+      x: (point.x - state.pointerOffset.x) / state.width,
+      y: (point.y - state.pointerOffset.y) / state.height
+    });
+    setStatusForDistance(node);
+    draw();
+    return;
+  }
+
+  const hover = getNodeAt(point);
+  if (hover !== state.hoverIndex) {
+    state.hoverIndex = hover;
+    draw();
+  }
+}
+
+function handlePointerUp(event) {
+  if (state.dragIndex === -1) {
+    return;
+  }
+
+  const index = state.dragIndex;
+  const node = nodes[index];
+  if (canvas.hasPointerCapture(event.pointerId)) {
+    canvas.releasePointerCapture(event.pointerId);
+  }
+  state.dragIndex = -1;
+  trySnapNode(node);
+  updateProgress();
+  draw();
+}
+
+function handlePointerLeave() {
+  if (state.dragIndex === -1 && state.hoverIndex !== -1) {
+    state.hoverIndex = -1;
+    draw();
+  }
+}
+
+function trySnapNode(node) {
+  const distance = distanceBetween(node.position, node.target);
+  if (distance <= snapDistance) {
+    node.position = { ...node.target };
+    node.locked = true;
+    setStatus(`${node.label}: locked.`);
+  } else {
+    node.locked = false;
+    setStatus(`${node.label}: drifting.`);
+  }
+}
