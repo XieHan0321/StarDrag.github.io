@@ -432,3 +432,165 @@ function trySnapNode(node) {
     setStatus(`${node.label}: drifting.`);
   }
 }
+
+function setStatusForDistance(node) {
+  const distance = distanceBetween(node.position, node.target);
+  if (distance <= snapDistance) {
+    setStatus(`${node.label}: signal found.`);
+  } else if (distance <= snapDistance * 1.8) {
+    setStatus(`${node.label}: signal warming.`);
+  } else {
+    setStatus(`${node.label}: calibrating.`);
+  }
+}
+
+function updateProgress() {
+  const lockedCount = nodes.filter((node) => node.locked).length;
+  const percent = (lockedCount / nodes.length) * 100;
+  scoreLabel.textContent = `${lockedCount} / ${nodes.length} aligned`;
+  scoreBar.style.width = `${percent}%`;
+
+  if (lockedCount === nodes.length) {
+    completionText.hidden = false;
+    setStatus("Beacon field: aligned.");
+  } else if (lockedCount === 0) {
+    completionText.hidden = true;
+  }
+}
+
+function setStatus(message) {
+  if (message === state.lastMessage) {
+    return;
+  }
+  state.lastMessage = message;
+  statusText.textContent = message;
+}
+
+function resetField() {
+  nodes.forEach((node) => {
+    node.position = { ...node.start };
+    node.locked = false;
+  });
+  state.dragIndex = -1;
+  state.hoverIndex = -1;
+  state.activeIndex = 0;
+  completionText.hidden = true;
+  setStatus("Beacon field: unsettled.");
+  updateProgress();
+  draw();
+}
+
+function toggleTargets() {
+  state.showTargets = !state.showTargets;
+  hintBtn.setAttribute("aria-pressed", String(state.showTargets));
+  hintBtn.title = state.showTargets ? "Hide targets" : "Reveal targets";
+  setStatus(state.showTargets ? "Target field: revealed." : "Target field: quiet.");
+  draw();
+}
+
+function handleKeyDown(event) {
+  const key = event.key;
+  const currentNode = nodes[state.activeIndex];
+
+  if (key === " ") {
+    event.preventDefault();
+    selectNextUnlockedNode();
+    draw();
+    return;
+  }
+
+  const step = event.shiftKey ? 0.02 : 0.009;
+  const moves = {
+    ArrowUp: { x: 0, y: -step },
+    ArrowDown: { x: 0, y: step },
+    ArrowLeft: { x: -step, y: 0 },
+    ArrowRight: { x: step, y: 0 }
+  };
+
+  if (moves[key]) {
+    event.preventDefault();
+    currentNode.locked = false;
+    currentNode.position = clampPoint({
+      x: currentNode.position.x + moves[key].x,
+      y: currentNode.position.y + moves[key].y
+    });
+    setStatusForDistance(currentNode);
+    trySnapNode(currentNode);
+    updateProgress();
+    draw();
+  }
+}
+
+function selectNextUnlockedNode() {
+  const start = state.activeIndex + 1;
+  for (let offset = 0; offset < nodes.length; offset += 1) {
+    const index = (start + offset) % nodes.length;
+    if (!nodes[index].locked) {
+      state.activeIndex = index;
+      setStatus(`${nodes[index].label}: selected.`);
+      return;
+    }
+  }
+  state.activeIndex = 0;
+}
+
+function clampPoint(point) {
+  return {
+    x: Math.min(0.96, Math.max(0.04, point.x)),
+    y: Math.min(0.8, Math.max(0.08, point.y))
+  };
+}
+
+function toScreen(point) {
+  return {
+    x: point.x * state.width,
+    y: point.y * state.height
+  };
+}
+
+function distanceBetween(a, b) {
+  return Math.hypot(a.x - b.x, a.y - b.y);
+}
+
+function nodeRadius() {
+  return Math.max(10, Math.min(18, state.width * 0.014));
+}
+
+function targetRadius() {
+  return nodeRadius() + 10;
+}
+
+function withAlpha(hex, alpha) {
+  const clean = hex.replace("#", "");
+  const r = parseInt(clean.slice(0, 2), 16);
+  const g = parseInt(clean.slice(2, 4), 16);
+  const b = parseInt(clean.slice(4, 6), 16);
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
+function animate(now) {
+  draw(now);
+  if (!prefersReducedMotion) {
+    requestAnimationFrame(animate);
+  }
+}
+
+window.addEventListener("resize", resizeCanvas);
+canvas.addEventListener("pointerdown", handlePointerDown);
+canvas.addEventListener("pointermove", handlePointerMove);
+canvas.addEventListener("pointerup", handlePointerUp);
+canvas.addEventListener("pointercancel", handlePointerUp);
+canvas.addEventListener("pointerleave", handlePointerLeave);
+canvas.addEventListener("keydown", handleKeyDown);
+resetBtn.addEventListener("click", resetField);
+hintBtn.addEventListener("click", toggleTargets);
+
+resizeCanvas();
+updateProgress();
+setStatus("Beacon field: unsettled.");
+
+if (prefersReducedMotion) {
+  draw();
+} else {
+  requestAnimationFrame(animate);
+}
