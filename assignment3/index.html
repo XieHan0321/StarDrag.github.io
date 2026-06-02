@@ -35,10 +35,49 @@
       </header>
 
       <section class="stage" aria-label="Interactive harbor constellation">
-        <p id="canvasHelp" class="sr-only">
-          Drag the bright beacons toward the pale target rings. Keyboard users can focus the canvas, press space to select another beacon, and use arrow keys to move it.
-        </p>
-        <canvas id="skyCanvas" tabindex="0" aria-describedby="canvasHelp statusText"></canvas>
+      <p id="stageHelp" class="sr-only">
+          Drag each bright beacon toward its matching pale target ring.
+        </p >
+
+        <div id="starField" class="star-field" aria-describedby="stageHelp statusText">
+          <div class="sky-dot dot-1"></div>
+          <div class="sky-dot dot-2"></div>
+          <div class="sky-dot dot-3"></div>
+          <div class="sky-dot dot-4"></div>
+          <div class="sky-dot dot-5"></div>
+          <div class="sky-dot dot-6"></div>
+          <div class="sky-dot dot-7"></div>
+          <div class="sky-dot dot-8"></div>
+          <div class="sky-dot dot-9"></div>
+          <div class="sky-dot dot-10"></div>
+          <div class="sky-dot dot-11"></div>
+          <div class="sky-dot dot-12"></div>
+
+          <div class="target-ring" data-index="0" aria-hidden="true"></div>
+          <div class="target-ring" data-index="1" aria-hidden="true"></div>
+          <div class="target-ring" data-index="2" aria-hidden="true"></div>
+          <div class="target-ring" data-index="3" aria-hidden="true"></div>
+          <div class="target-ring" data-index="4" aria-hidden="true"></div>
+          <div class="target-ring" data-index="5" aria-hidden="true"></div>
+          <div class="target-ring" data-index="6" aria-hidden="true"></div>
+
+          <button class="beacon" data-index="0" type="button">Pier Light</button>
+          <button class="beacon" data-index="1" type="button">Signal Mast</button>
+          <button class="beacon" data-index="2" type="button">Fog Bell</button>
+          <button class="beacon" data-index="3" type="button">Dock Beacon</button>
+          <button class="beacon" data-index="4" type="button">Outer Buoy</button>
+          <button class="beacon" data-index="5" type="button">Tide Gauge</button>
+          <button class="beacon" data-index="6" type="button">Watch Room</button>
+
+          <div class="harbor-shape harbor-1"></div>
+          <div class="harbor-shape harbor-2"></div>
+          <div class="harbor-shape harbor-3"></div>
+          <div class="harbor-shape harbor-4"></div>
+          <div class="water-line water-1"></div>
+          <div class="water-line water-2"></div>
+          <div class="water-line water-3"></div>
+        </div>
+        
         <aside class="signal-strip" aria-live="polite" aria-atomic="true">
           <p id="statusText">Beacon field: unsettled.</p>
           <p id="completionText" hidden>Signal aligned. The harbor constellation is ready.</p>
