@@ -128,27 +128,155 @@ h1 {
     #081017;
 }
 
-#skyCanvas {
+.star-field {
+  position: relative;
   width: 100%;
   height: 100%;
+  overflow: hidden;
+  cursor: default;
+}
+
+.star-field::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, #07111f, #0b1b24 50%, #11201d);
+}
+
+.sky-dot {
+  position: absolute;
+  z-index: 1;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: rgba(246, 240, 221, 0.68);
+  box-shadow: 0 0 10px rgba(246, 240, 221, 0.5);
+}
+
+.dot-1 { left: 8%; top: 18%; }
+.dot-2 { left: 15%; top: 36%; }
+.dot-3 { left: 27%; top: 14%; }
+.dot-4 { left: 37%; top: 26%; }
+.dot-5 { left: 45%; top: 12%; }
+.dot-6 { left: 58%; top: 31%; }
+.dot-7 { left: 64%; top: 17%; }
+.dot-8 { left: 75%; top: 24%; }
+.dot-9 { left: 84%; top: 13%; }
+.dot-10 { left: 91%; top: 34%; }
+.dot-11 { left: 21%; top: 55%; }
+.dot-12 { left: 72%; top: 52%; }
+
+.target-ring,
+.beacon {
+  position: absolute;
+  z-index: 3;
+  transform: translate(-50%, -50%);
+}
+
+.target-ring {
+  width: 42px;
+  height: 42px;
+  border: 2px dashed rgba(246, 240, 221, 0.18);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.03);
+  transition: border-color 180ms ease, background 180ms ease, opacity 180ms ease;
+}
+
+.star-field.show-targets .target-ring {
+  border-color: rgba(246, 240, 221, 0.48);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.target-ring.locked {
+  border-style: solid;
+  border-color: currentColor;
+  background: rgba(159, 220, 142, 0.12);
+}
+
+.beacon {
+  width: 34px;
+  height: 34px;
+  overflow: hidden;
+  border: 2px solid rgba(246, 240, 221, 0.35);
+  border-radius: 50%;
+  box-shadow: 0 0 26px currentColor;
+  color: var(--cyan);
   cursor: grab;
-  touch-action: none;
+  font-size: 0;
+  transition: transform 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
 }
 
-#skyCanvas:active {
+.beacon::before {
+  content: "";
+  position: absolute;
+  inset: 7px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.beacon:hover,
+.beacon:focus-visible,
+.beacon.is-active {
+  border-color: rgba(246, 240, 221, 0.88);
+  outline: none;
+  transform: translate(-50%, -50%) scale(1.16);
+}
+
+.beacon.is-dragging {
   cursor: grabbing;
+  transform: translate(-50%, -50%) scale(1.22);
 }
 
-#skyCanvas:focus-visible {
-  outline: 2px solid var(--amber);
-  outline-offset: -6px;
+.beacon.is-locked {
+  border-color: currentColor;
+  box-shadow: 0 0 34px currentColor;
 }
+
+.beacon[data-index="0"],
+.target-ring[data-index="0"] { color: #53efd6; }
+.beacon[data-index="1"],
+.target-ring[data-index="1"] { color: #f2b35e; }
+.beacon[data-index="2"],
+.target-ring[data-index="2"] { color: #ff7f8c; }
+.beacon[data-index="3"],
+.target-ring[data-index="3"] { color: #9fdc8e; }
+.beacon[data-index="4"],
+.target-ring[data-index="4"] { color: #c5a7ff; }
+.beacon[data-index="5"],
+.target-ring[data-index="5"] { color: #89bfff; }
+.beacon[data-index="6"],
+.target-ring[data-index="6"] { color: #f7df72; }
+
+.harbor-shape {
+  position: absolute;
+  z-index: 2;
+  bottom: 14%;
+  background: rgba(6, 13, 17, 0.9);
+}
+
+.harbor-1 { left: 6%; width: 8%; height: 11%; }
+.harbor-2 { left: 22%; width: 12%; height: 8%; }
+.harbor-3 { left: 55%; width: 9%; height: 13%; }
+.harbor-4 { left: 77%; width: 13%; height: 9%; }
+
+.water-line {
+  position: absolute;
+  z-index: 2;
+  left: 0;
+  width: 100%;
+  height: 1px;
+  background: rgba(83, 239, 214, 0.12);
+}
+
+.water-1 { bottom: 11%; }
+.water-2 { bottom: 7%; background: rgba(242, 179, 94, 0.1); }
+.water-3 { bottom: 3%; }
 
 .signal-strip {
   position: absolute;
-  right: clamp(14px, 3vw, 34px);
-  bottom: clamp(14px, 3vw, 30px);
-  max-width: min(380px, calc(100vw - 28px));
+  right:34px;
+  bottom:30px;
+  max-width:380px;
   padding: 12px 14px;
   border: 1px solid rgba(246, 240, 221, 0.16);
   border-radius: 8px;
@@ -171,7 +299,6 @@ h1 {
   height: 1px;
   overflow: hidden;
   clip: rect(0, 0, 0, 0);
-  clip-path: inset(50%);
   white-space: nowrap;
 }
 
@@ -179,7 +306,11 @@ h1 {
   .topbar {
     grid-template-columns: 1fr auto;
     gap: 14px;
-    padding: 14px 14px 12px;
+    padding: 14px ;
+  }
+
+  h1{
+    font-size: 1.3rem;
   }
 
   .progress-panel {
@@ -195,15 +326,6 @@ h1 {
     left: 14px;
     right: 14px;
     bottom: 14px;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    scroll-behavior: auto !important;
-    transition-duration: 0.001ms !important;
-    animation-duration: 0.001ms !important;
+    max-width: none;
   }
 }
