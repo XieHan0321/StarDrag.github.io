@@ -11,6 +11,7 @@ const targets = document.querySelectorAll(".target-ring");
 
 const snapDistance = 0.055;
 
+// Each object stores one beacon's starting position and matching target position.
 const nodes = [
   {
     label: "Pier Light",
@@ -74,6 +75,7 @@ let dragIndex = -1;
 let offsetX = 0;
 let offsetY = 0;
 
+// Place the HTML beacons and target rings using percentage positions.
 function placeElements() {
   for (let index = 0; index < nodes.length; index += 1) {
     const node = nodes[index];
@@ -92,6 +94,7 @@ function placeElements() {
   }
 }
 
+// Convert the mouse position from the full browser window to the star field area.
 function getMousePosition(event) {
   const rect = starField.getBoundingClientRect();
   return {
@@ -102,6 +105,7 @@ function getMousePosition(event) {
   };
 }
 
+// Start dragging the selected beacon and remember where the mouse grabbed it.
 function startDrag(event) {
   const beacon = event.currentTarget;
   dragIndex = Number(beacon.dataset.index);
@@ -120,6 +124,7 @@ function startDrag(event) {
   updateProgress();
 }
 
+// Move the active beacon while the mouse is moving.
 function dragBeacon(event) {
   if (dragIndex === -1) {
     return;
@@ -139,6 +144,7 @@ function dragBeacon(event) {
   setStatusForDistance(node);
 }
 
+// When the mouse is released, check whether the beacon should snap to its target.
 function stopDrag() {
   if (dragIndex === -1) {
     return;
@@ -153,6 +159,7 @@ function stopDrag() {
   updateProgress();
 }
 
+// Lock the beacon in place if it is close enough to the target ring.
 function trySnapNode(node, beacon, target) {
   const distance = getDistance(node.x, node.y, node.targetX, node.targetY);
 
@@ -185,6 +192,7 @@ function setStatusForDistance(node) {
   }
 }
 
+// Count the locked beacons and update the progress display.
 function updateProgress() {
   let lockedCount = 0;
 
@@ -209,6 +217,7 @@ function setStatus(message) {
   statusText.textContent = message;
 }
 
+// Reset all beacons to their original positions.
 function resetField() {
   for (let index = 0; index < nodes.length; index += 1) {
     const node = nodes[index];
@@ -226,6 +235,7 @@ function resetField() {
   setStatus("Beacon field: unsettled.");
 }
 
+// Show or hide the target rings when the hint button is clicked.
 function toggleTargets() {
   if (starField.classList.contains("show-targets")) {
     starField.classList.remove("show-targets");
